@@ -47,5 +47,10 @@ jobs:
             --resource-group Learn-aci \
             --name javademoaci \
             --image estebandevacr.azurecr.io/javademoaci:1 \
+            --cpu 1 --memory 1 \
+            --registry-login-server estebandevacr.azurecr.io \
+            --registry-username ${{ secrets.ACR_USERNAME }} \
+            --registry-password ${{ secrets.ACR_PASSWORD }} \
+            --ip-address Public \
             --dns-name-label estebandevacrdemo \
-            --ports 8080
+            --ports 80
