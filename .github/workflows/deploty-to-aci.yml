@@ -1,0 +1,51 @@
+name: Build and Deploy Spring Boot App to ACI
+
+on:
+  push:
+    branches:
+      - main # Desencadena el flujo de trabajo cuando haya cambios en la rama "main"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
+        with:
+          distribution: "temurin" # Opción para JDK OpenJDK
+          java-version: "17"
+
+      - name: Build with Maven
+        run: mvn clean package
+
+      - name: Build Docker image
+        run: docker build -t estebandevacr.azurecr.io/javademoaci:1 .
+
+      - name: Log in to ACR
+        run: |
+          echo ${{ secrets.ACR_PASSWORD }} | docker login estebandevacr.azurecr.io -u ${{ secrets.ACR_USERNAME }} --password-stdin
+
+      - name: Push Docker image to ACR
+        run: docker push estebandevacr.azurecr.io/javademoaci:1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Container Instances
+        run: |
+          az container create \
+            --resource-group Learn-aci \
+            --name javademoaci \
+            --image estebandevacr.azurecr.io/javademoaci:1 \
+            --dns-name-label estebandevacrdemo \
+            --ports 8080
